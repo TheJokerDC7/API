@@ -28,18 +28,18 @@ Flight::route('POST /alumnos', function () {
 
 Flight::route('DELETE /alumnos', function () {
     // Asumamos que el ID del alumno se pasa a través de un parámetro POST llamado 'id'
-    $idAlumno = Flight::request()->data->id;
-    print_r($idAlumno);
+    $id = Flight::request()->data->id;
+    print_r($id);
     $sql = "delete from alumnos where id=?";
     $sentencia = Flight::db()->prepare($sql);
-    $sentencia->bindParam(1, $idAlumno);
+    $sentencia->bindParam(1, $id);
     $sentencia->execute();
     Flight::jsonp(["Alumno eliminado"]);
 });
 
 Flight::route('PUT /alumnos', function () {
     //Actualizar datos
-    $idAlumno = (Flight::request()->data->id);
+    $id = (Flight::request()->data->id);
     $nombres = (Flight::request()->data->nombres);
     $apellidos = (Flight::request()->data->apellidos);
     $sql = "UPDATE alumnos SET nombres=?, apellidos=? WHERE id=?";
@@ -47,9 +47,33 @@ Flight::route('PUT /alumnos', function () {
  
     $sentencia->bindParam(1, $nombres);
     $sentencia->bindParam(2, $apellidos);
-    $sentencia->bindParam(3, $idAlumno);
-    $sentencia->execute();
-    Flight::jsonp(["Alumno editado"]);
+    $sentencia->bindParam(3, $id);
+
+    if($sentencia->execute()) {
+        if($sentencia->rowCount() > 0) {
+            Flight::json(["message" => "Alumno editado con éxito."]);
+        } else {
+            Flight::json(["error" => "No se encontró alumno con ese ID o no hubo cambios en los datos."], 404); // Not Found
+        }
+    } else {
+        Flight::json(["error" => "Error al editar el alumno. Inténtalo de nuevo."], 500); // Internal Server Error
+    }
 });
+
+Flight::route('GET /alumnos/@id', function ($id) {
+    // Buscar un registro específico en la base de datos basado en el ID
+    $sql = "SELECT * FROM alumnos WHERE id=?";
+    $sentencia = Flight::db()->prepare($sql);
+    $sentencia->bindParam(1, $id);
+    $sentencia->execute();
+    $datos = $sentencia->fetchAll();
+    
+    if ($datos) {
+        Flight::json($datos);
+    } else {
+        Flight::json(["error" => "No se encontró alumno con ese ID"], 404); // Not Found
+    }
+});
+
 
 Flight::start();
